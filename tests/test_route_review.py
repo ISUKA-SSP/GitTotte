@@ -73,3 +73,16 @@ class RouteReviewTests(unittest.TestCase):
         plan=compare_routes(self.project,'main','feature/gui')
         with self.assertRaises(ValueError):file_patch(self.project,plan,'main-only.txt')
         self.assertIn('表示量',file_patch(self.project,plan,'code.py',limit=10))
+
+    def test_patch_for_bracket_filename_only_contains_selected_file(self):
+        git('checkout','feature/gui',cwd=self.seed)
+        for name,content in (('[ab].txt','CHOSEN_FILE_CONTENT'),
+                             ('a.txt','NOT_CHOSEN_A'),('b.txt','NOT_CHOSEN_B')):
+            (self.seed/name).write_text(content+'\n')
+        self.commit('bracket filenames')
+        git('fetch','origin',cwd=self.project.cache)
+        plan=compare_routes(self.project,'main','feature/gui')
+        text=file_patch(self.project,plan,'[ab].txt')
+        self.assertIn('+CHOSEN_FILE_CONTENT',text)
+        self.assertNotIn('NOT_CHOSEN_A',text)
+        self.assertNotIn('NOT_CHOSEN_B',text)

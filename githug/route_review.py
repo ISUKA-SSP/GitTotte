@@ -64,7 +64,7 @@ def compare_routes(project,base,head):
 
 def file_patch(project,plan,path,limit=180000):
     if not plan.common or path not in {entry[1] for entry in plan.files}:raise ValueError('比較した一覧からファイルを選んでください。')
-    text=git('diff','--no-ext-diff','--no-textconv','--no-renames',plan.common,plan.head_sha,'--',path,cwd=project.cache)
+    text=git('--literal-pathspecs','diff','--no-ext-diff','--no-textconv','--no-renames',plan.common,plan.head_sha,'--',path,cwd=project.cache)
     if len(text)>limit:text=text[:limit]+'\n\n（表示量を制限しています。全文はGitHubで確認してください。）'
     return text or 'このファイルに表示できる差分はありません。'
 

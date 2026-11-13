@@ -108,3 +108,21 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(unrelated.read_text(), 'keep')
         self.project.url = str(self.seed)
         self.assertTrue(self.project.refresh())
+
+    def test_cleanup_failure_preserves_download_error_and_reports_leftover(self):
+        remove_temporary(self.project.cache)
+        original = GitError('original download error')
+        def fail_clone(*args, **kwargs):
+            Path(args[-1]).mkdir()
+            raise original
+        with patch('githug.core.git', side_effect=fail_clone), \
+                patch('githug.updating.remove_temporary', side_effect=PermissionError('cleanup denied')):
+            with self.assertRaises(GitError) as caught:
+                self.project.refresh()
+        self.assertIs(caught.exception.__cause__, original)
+        self.assertIn('original download error', str(caught.exception))
+        self.assertIn('cleanup denied', str(caught.exception))
+        leftovers = list(self.project.base.glob('download-*'))
+        self.assertEqual(len(leftovers), 1)
+        self.assertIn(str(leftovers[0]), str(caught.exception))
+        self.assertFalse(self.project.cache.exists())

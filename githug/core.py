@@ -63,10 +63,17 @@ class Project:
             try:
                 git('clone', '--mirror', self.url, temporary)
                 temporary.rename(self.cache)
-            finally:
-                if temporary.exists():
-                    from .updating import remove_temporary
-                    remove_temporary(temporary)
+            except Exception as error:
+                try:
+                    if temporary.exists():
+                        from .updating import remove_temporary
+                        remove_temporary(temporary)
+                except OSError as cleanup_error:
+                    raise GitError(
+                        f'{error}\n\n一時フォルダーを削除できませんでした: {temporary}\n'
+                        f'{cleanup_error}'
+                    ) from error
+                raise
         else:
             git('fetch', '--prune', 'origin', cwd=self.cache)
         return self.history()
