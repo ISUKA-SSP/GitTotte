@@ -3,7 +3,7 @@ name: Build Windows portable
 on:
   workflow_dispatch:
   push:
-    branches: [gpt/release-v1.1.1]
+    branches: [gpt/release-v1.1.2]
 
 permissions:
   contents: read
@@ -38,32 +38,26 @@ jobs:
           python -m gittotte --smoke-test build/source-smoke.json
           Get-Content build/source-smoke.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Build portable application
+      - name: Build portable application and verify notices
         run: python packaging/build_windows.py
-      - name: Scan current distribution with Defender
+      - name: Verify ZIP contents and checksums
+        run: python packaging/verify_distribution.py dist/GitTotte-1.1.2-Windows-x64.zip
+      - name: Scan distribution with Defender
         shell: pwsh
         run: |
           ./packaging/scan_windows.ps1 -Target dist/GitTotte -Report build/security/current-folder.json
-          ./packaging/scan_windows.ps1 -Target dist/GitTotte-1.1.1-Windows-x64.zip -Report build/security/current-zip.json
+          ./packaging/scan_windows.ps1 -Target dist/GitTotte-1.1.2-Windows-x64.zip -Report build/security/current-zip.json
       - name: Verify EXE with bundled Git
         run: python packaging/verify_bundle.py dist/GitTotte build/windows-smoke.json
-      - name: Upload Windows application
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: GitTotte-Windows-x64
-          path: dist/GitTotte/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 30
       - name: Upload release ZIP and checksum
         uses: actions/upload-artifact@v7.0.2
         with:
           name: GitTotte-release-files
           path: |
-            dist/GitTotte-1.1.1-Windows-x64.zip
-            dist/GitTotte-1.1.1-Windows-x64.sha256
+            dist/GitTotte-1.1.2-Windows-x64.zip
+            dist/GitTotte-1.1.2-Windows-x64.sha256
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
       - name: Upload build diagnostics
         if: always()
         uses: actions/upload-artifact@v7.0.2
@@ -81,11 +75,13 @@ jobs:
             dist/*.sha256
             build/pyinstaller/GitTotte/warn-GitTotte.txt
           if-no-files-found: ignore
+          retention-days: 7
 
-  publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/gpt/release-v1.1.1'
+  prepare-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/gpt/release-v1.1.2'
     needs: windows
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       actions: read
@@ -93,39 +89,60 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.13'
       - uses: actions/download-artifact@v8.0.2
         with:
           name: GitTotte-release-files
-          path: release-files
+          path: dist
       - uses: actions/download-artifact@v8.0.2
         with:
           name: GitTotte-build-diagnostics
           path: diagnostics
-      - name: Verify publication inputs
+      - name: Collect complete matching third-party source packages
+        run: python packaging/build_sources.py
+      - name: Package application source and verification reports
         run: |
+          git archive --format=zip --prefix=GitTotte-source/ HEAD -o dist/GitTotte-1.1.2-Source.zip
           python - <<'PYCODE'
-          import json
           from pathlib import Path
-          import hashlib
+          import hashlib,json,zipfile
           def read_report(name):
               paths=list(Path('diagnostics').rglob(name))
               assert len(paths)==1,(name,paths)
               return json.loads(paths[0].read_text(encoding='utf-8-sig'))
-          source=read_report('source-smoke.json')
+          for name in ('source-smoke.json','windows-smoke.json'):
+              report=read_report(name)
+              assert report['version']=='1.1.2' and report['gui_initialized'] and not report['callback_errors']
           frozen=read_report('windows-smoke.json')
-          for report in (source,frozen):
-              assert report['version']=='1.1.1' and report['gui_initialized'] and not report['callback_errors']
           assert frozen['frozen'] and frozen['git_roundtrip'] and frozen['console_interactive']
-          for name in ('current-folder','current-zip'):
-              report=read_report(name+'.json')
-              assert report['status']=='no_detection'
-          archive=Path('release-files/GitTotte-1.1.1-Windows-x64.zip')
-          checksum=archive.with_suffix('.sha256').read_text().split()[0]
-          assert hashlib.sha256(archive.read_bytes()).hexdigest()==checksum
+          for name in ('current-folder.json','current-zip.json'):
+              assert read_report(name)['status']=='no_detection'
+          archive=Path('dist/GitTotte-1.1.2-Windows-x64.zip')
+          with archive.open('rb') as source:
+              actual=hashlib.file_digest(source,'sha256').hexdigest()
+          assert actual==archive.with_suffix('.sha256').read_text().split()[0]
+          import os
+          with zipfile.ZipFile(archive) as zipped:
+              assert json.loads(zipped.read('GitTotte/build-info.json'))['source_commit']==os.environ['GITHUB_SHA']
+          with zipfile.ZipFile('dist/GitTotte-1.1.2-Checks.zip','w',zipfile.ZIP_DEFLATED) as zipped:
+              for path in Path('diagnostics').rglob('*'):
+                  if path.is_file():zipped.write(path,path.relative_to('diagnostics'))
+          for name in ('GitTotte-1.1.2-Source.zip','GitTotte-1.1.2-Checks.zip'):
+              path=Path('dist')/name
+              with path.open('rb') as source:sha=hashlib.file_digest(source,'sha256').hexdigest()
+              path.with_suffix('.sha256').write_text(sha+'  '+name+'\n')
           PYCODE
-      - name: Publish verified Windows release
+      - name: Prepare draft release for review
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create v1.1.1 release-files/GitTotte-1.1.1-Windows-x64.zip release-files/GitTotte-1.1.1-Windows-x64.sha256 --target "$GITHUB_SHA" --title "GitTotte v1.1.1" --notes-file docs/releases/v1.1.1.md --latest
+          if gh release view v1.1.2 --json isDraft > /tmp/gittotte-release-state.json 2>/dev/null; then
+            python -c "import json; assert json.load(open('/tmp/gittotte-release-state.json'))['isDraft'], 'A published release already exists'"
+            gh release edit v1.1.2 --draft --target "$GITHUB_SHA" --title "GitTotte v1.1.2" --notes-file docs/releases/v1.1.2.md
+          else
+            gh release create v1.1.2 --draft --target "$GITHUB_SHA" --title "GitTotte v1.1.2" --notes-file docs/releases/v1.1.2.md
+          fi
+          gh release upload v1.1.2 dist/GitTotte-1.1.2-* --clobber

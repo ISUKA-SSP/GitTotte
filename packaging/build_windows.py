@@ -72,7 +72,11 @@ def main():
     shutil.copytree(ROOT/'docs',folder/'docs',dirs_exist_ok=True,ignore=shutil.ignore_patterns('changes','releases'))
     shutil.copy2(ROOT/'packaging'/'FIRST_START.txt',folder/'はじめに.txt')
     shutil.copy2(ROOT/'packaging'/'THIRD_PARTY_NOTICES.md',folder/'THIRD_PARTY_NOTICES.md')
+    for name in ('LICENSE','ASSET_LICENSE.md'):
+        shutil.copy2(ROOT/name,folder/name)
+    shutil.copy2(ROOT/'packaging'/'SOURCES.txt',folder/'SOURCES.txt')
     licenses=folder/'licenses';licenses.mkdir(exist_ok=True)
+    shutil.copytree(ROOT/'packaging'/'licenses',licenses,dirs_exist_ok=True)
     for path,name in [(Path(sys.base_prefix)/'LICENSE.txt','Python-LICENSE.txt'),
                       (Path(sys.base_prefix)/'tcl'/'tcl8.6'/'license.terms','Tcl-license.terms'),
                       (Path(sys.base_prefix)/'tcl'/'tk8.6'/'license.terms','Tk-license.terms')]:
@@ -94,6 +98,7 @@ def main():
     # pyte stays as replaceable Python source under _internal/pyte, outside the frozen archive.
     info={'version':__version__,'architecture':'Windows x64','python':sys.version,
           'pyinstaller':importlib.metadata.version('pyinstaller'),
+          'source_commit':os.environ.get('GITHUB_SHA','local-build'),
           'console_components':{name:importlib.metadata.version(name) for name in ('pywinpty','pyte','wcwidth','pywin32')},
           'bundled_git':None if args.without_git else {'version':GIT_VERSION,'url':GIT_URL,'sha256':GIT_SHA256}}
     provenance=ROOT/'build'/'bootloader-build.json'
@@ -111,6 +116,8 @@ def main():
     info['windows_version_info']=strings
     info['authenticode_present']=bool(pe.OPTIONAL_HEADER.DATA_DIRECTORY[4].Size)
     (folder/'build-info.json').write_text(json.dumps(info,ensure_ascii=False,indent=2),encoding='utf-8')
+    from verify_distribution import verify_folder
+    verify_folder(folder)
     manifest={str(path.relative_to(folder)).replace('\\','/'):hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(folder.rglob('*')) if path.is_file()}
     (folder/'file-sha256.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
     archive=ROOT/'dist'/f'GitTotte-{__version__}-Windows-x64.zip'

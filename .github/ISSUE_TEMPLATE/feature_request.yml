@@ -1,0 +1,13 @@
+name: 改善・機能の要望
+description: 楽にしたい操作や、分かりづらかった点を教えてください
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: やりたいこと・困っていること
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 希望する動きや案

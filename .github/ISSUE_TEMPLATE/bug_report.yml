@@ -1,0 +1,36 @@
+name: 不具合の報告
+description: 起きたことと再現手順を教えてください
+title: "[不具合] "
+body:
+  - type: markdown
+    attributes:
+      value: "投稿内容は公開されます。APIキー・個人情報・業務データを含めないでください。"
+  - type: input
+    id: version
+    attributes:
+      label: GitTotteのバージョン
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows・OSの情報
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 選択したもの・押したボタンなどを順番に記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待していた動作
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際に起きたこと・エラー表示
+    validations:
+      required: true

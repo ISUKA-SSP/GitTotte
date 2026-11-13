@@ -1,0 +1,25 @@
+GitTotte 1.1.2 ソースの入手先
+
+本体とビルド手順
+https://github.com/ISUKA-SSP/GitTotte/releases/tag/v1.1.2
+上記の配布ページにある GitTotte-1.1.2-Source.zip を参照してください。
+
+同梱ソフトの対応ソース
+同じ配布ページの GitTotte-1.1.2-ThirdPartySources.zip に収録しています。
+MinGit 2.56.0.4のpackage-versions.txtに記載された各部品について、
+対応バージョンの元のソースパッケージとビルド用PKGBUILD・パッチを保持しています。
+PyInstaller 6.22.3、pyte 0.8.2のソースも収録しています。
+source-lock.jsonにパッケージ名・バージョン・入手元・SHA-256を記載しています。
+
+pyteの実際に使用するソースは、この配布物の _internal/pyte にあります。
+互換性のある改変版へ差し替えられます。変更のデバッグを目的とした
+本体の改変・リバースエンジニアリングも許可します。
+GPL-3.0とLGPL-3.0の本文はlicensesフォルダーにあります。
+
+元のソースパッケージにはGitリポジトリが含まれるものがあります。
+各パッケージの.SRCINFOとPKGBUILDに対応する参照・パッチ・ビルド手順があります。
+Git for Windows SDKの説明
+https://gitforwindows.org/technical-overview.html
+
+第三者の各ライセンス・著作権表示はそのまま適用されます。
+詳しくはTHIRD_PARTY_NOTICES.mdをご覧ください。

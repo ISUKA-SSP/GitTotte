@@ -6,11 +6,18 @@ GitHubに「取っ手」を付ける、Windows用の無料デスクトップア�
 
 旧名は **GitHug** です。v1.1.0からGitTotteに改名しました。
 
+## こんな方におすすめ
+
+- GitHubを使いたいけれど、コマンドや専門用語を覚えることが負担な方。
+- 最新や過去の版を別フォルダーへ取り出して、今の作業と見比べたり試したりしたい方。
+- 編集内容をPCに記録し、GitHubへ送る前に対象ファイルと送信先を確認したい方。
+- やりたいことを選び、操作ガイドを見ながら進めたい方。
+
 ## ダウンロード・起動
 
-**[Windows版 v1.1.1 をダウンロード](https://github.com/ISUKA-SSP/GitTotte/releases/download/v1.1.1/GitTotte-1.1.1-Windows-x64.zip)**
+**[Windows版 v1.1.2 をダウンロード](https://github.com/ISUKA-SSP/GitTotte/releases/download/v1.1.2/GitTotte-1.1.2-Windows-x64.zip)**
 
-[配布ページ・更新内容](https://github.com/ISUKA-SSP/GitTotte/releases/latest) ／ [SHA-256チェックサム](https://github.com/ISUKA-SSP/GitTotte/releases/download/v1.1.1/GitTotte-1.1.1-Windows-x64.sha256)
+[配布ページ・更新内容](https://github.com/ISUKA-SSP/GitTotte/releases/latest) ／ [SHA-256チェックサム](https://github.com/ISUKA-SSP/GitTotte/releases/download/v1.1.2/GitTotte-1.1.2-Windows-x64.sha256)
 
 Windows 11・64bit向け。Pythonのインストールは不要です。公開プロジェクトの取得に使うGitも同梱しています。
 
@@ -52,7 +59,6 @@ Windows 11・64bit向け。Pythonのインストールは不要です。公開�
 履歴の分岐・合流をグラフで追えます。履歴は作業ルートとタグからたどれる全件を表示し、検索・並べ替え・ページ切替に対応します。PR専用の履歴は通常の一覧に含めません。PCのフォルダーはCtrl・Shiftで複数選択でき、まとめてごみ箱へ移動したり、見つからない項目だけ一覧から取り除いたりできます。
 
 履歴とPCの比較では、Gitの改行設定と `.gitattributes` に従って内容を判定します。Git管理のあるフォルダーは、そのフォルダーの改行・入力フィルター設定も使います。`.gitattributes` が手元にない場合は選択した履歴のものを参照します。比較は一時的な管理情報を使い、手元のファイルやステージ済みの内容を保持します。
-
 
 「表示用語：**操作名／Git用語**」は画面を見ながら切り替えられます。Git用語で人に説明したいときにも使えます。
 
@@ -122,7 +128,17 @@ PowerShellが停止してパネルも閉じているときは、F5で選択中�
 - Windows版にコード署名はありません。ChromeやWindowsの警告・判定は環境によって異なります。
 - 配布前にWindows上のテスト、EXE起動、同梱Git・PowerShell・主要画面の確認、DefenderによるフォルダーとZIPの検査を行います。検査の通過はすべての環境での動作や安全性を保証するものではありません。
 
+アプリの「使い方・環境 → 不具合・要望を送る」から、バージョンとOS情報を入力済みの報告ページを開けます。内容を確認してから送信してください。GitHubアカウントが必要です。
+
 不具合や要望は[Issues](https://github.com/ISUKA-SSP/GitTotte/issues)へ。再現手順・バージョン・エラー文を添えてください。APIキーや個人情報は載せないでください。
+
+## ライセンス・素材
+
+GitTotte本体のコードと文書は [MITライセンス](LICENSE) です。キャラクター画像は [画像素材の利用案内](ASSET_LICENSE.md)、同梱ソフトウェアはそれぞれのライセンスに従います。
+
+利用・改良したものを公開する際、[GitTotte](https://github.com/ISUKA-SSP/GitTotte) や [LivingAgent](https://github.com/ISUKA-SSP/living_agent_public/) への紹介リンクを添えていただけると嬉しいです。紹介リンクの掲載は任意です。
+
+[初回起動時の警告と配布ファイルの確認](docs/配布ファイルの確認.md)も参照できます。
 
 ## ソースから起動・開発
 

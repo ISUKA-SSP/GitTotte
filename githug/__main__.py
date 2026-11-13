@@ -317,9 +317,22 @@ class App:
         reader.insert('1.0',text);reader.configure(state='disabled')
         footer=ttk.Frame(popup,padding=16);footer.pack(fill='x')
         import webbrowser
-        ttk.Button(footer,text='ステラとシリカについて — LivingAgent',command=lambda:webbrowser.open('https://github.com/ISUKA-SSP/living_agent_public/')).pack(side='left')
-        ttk.Button(footer,text='閉じる',command=popup.destroy).pack(side='right')
+        footer.columnconfigure(0,weight=1)
+        ttk.Button(footer,text='ステラとシリカについて — LivingAgent',command=lambda:webbrowser.open('https://github.com/ISUKA-SSP/living_agent_public/')).grid(row=0,column=0,sticky='w')
+        self.report_button=ttk.Button(footer,text='不具合・要望を送る',command=self.report_issue)
+        self.report_button.grid(row=1,column=0,sticky='w',pady=(8,0))
+        ttk.Button(footer,text='閉じる',command=popup.destroy).grid(row=0,column=1,rowspan=2,padx=(12,0))
         return popup
+
+    def report_issue(self):
+        import platform
+        import webbrowser
+        from urllib.parse import urlencode
+        body=(f'## バージョン\n{__version__}\n\n## OS\n{platform.platform()}\n\n'
+              '## 再現手順\n\n## 期待した動作\n\n## 実際に起きたこと・エラー表示\n\n'
+              'APIキー・個人情報・業務データを含めずに記載してください。')
+        query=urlencode({'title':'[不具合] ', 'body':body})
+        webbrowser.open('https://github.com/ISUKA-SSP/GitTotte/issues/new?'+query)
 
     def configure_sort(self, name, table, columns):
         table.sort_labels = {col: table.heading(col, 'text') for col in columns}
