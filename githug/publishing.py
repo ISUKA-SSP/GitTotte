@@ -300,7 +300,7 @@ def publish(project, plan, paths, branch, is_new, message, author_name, author_e
                        '送信用コピー: ' + str(outbox) + '\n' + str(exc)) from exc
     warning = ''
     try:
-        git('fetch', '--prune', 'origin', cwd=project.cache)
+        project.fetch_history()
         path, record = record_for_folder(project, plan.folder)
         if not path:
             path = project.base / 'records' / ('work-sent-' + uuid4().hex + '.json')

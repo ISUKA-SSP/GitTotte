@@ -61,7 +61,7 @@ class Project:
             # Clone into a temporary directory: interrupted downloads cannot become a valid cache.
             temporary = self.base / ('download-' + uuid4().hex)
             try:
-                git('clone', '--mirror', self.url, temporary)
+                git('clone', '--bare', '--no-local', self.url, temporary)
                 temporary.rename(self.cache)
             except Exception as error:
                 try:
@@ -75,11 +75,18 @@ class Project:
                     ) from error
                 raise
         else:
-            git('fetch', '--prune', 'origin', cwd=self.cache)
+            self.fetch_history()
         return self.history()
 
+    def fetch_history(self):
+        # Explicit mappings also narrow old mirror caches. Keep their PR refs so
+        # folders copied from those commits retain a reachable comparison base.
+        git('fetch', '--prune', '--no-tags', '--refmap=', 'origin',
+            '+refs/heads/*:refs/heads/*', '+refs/tags/*:refs/tags/*', cwd=self.cache)
+
     def history(self):
-        raw = git('log', '--all', '--topo-order', '--date=iso-strict', '--pretty=format:%H%x09%P%x09%aI%x09%D%x09%s', cwd=self.cache)
+        raw = git('log', '--branches', '--tags', '--decorate-refs=HEAD',
+                  '--decorate-refs=refs/heads/*', '--decorate-refs=refs/tags/*', '--topo-order', '--date=iso-strict', '--pretty=format:%H%x09%P%x09%aI%x09%D%x09%s', cwd=self.cache)
         return [dict(zip(('sha', 'parents', 'date', 'refs', 'message'), line.split('\t', 4)))
                 for line in raw.splitlines() if line]
 
