@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from githug.core import Project, git, GitError, ComparisonCancelled
+from githug.updating import remove_temporary
 
 
 class ComparisonTests(unittest.TestCase):
@@ -91,7 +92,7 @@ class ComparisonTests(unittest.TestCase):
         self.assertFalse(any('diff' in call.args for call in calls.call_args_list))
 
     def test_failed_download_removes_only_its_partial_directory(self):
-        shutil.rmtree(self.project.cache)
+        remove_temporary(self.project.cache)
         unrelated = self.project.base / 'keep.txt'
         unrelated.write_text('keep')
         def fail_clone(*args, **kwargs):
