@@ -24,6 +24,22 @@ def verify_console(app,directory,capture):
         panel.reply.set('入力できました');panel.send_reply()
         wait(lambda:session.ready and 'ANSWER_CHECK:入力できました' in panel.screen.text())
         result['console_interactive']=True
+        panel.editor.delete('1.0','end')
+        panel.editor.insert('1.0',"1..100 | ForEach-Object { Write-Output ('HISTORY_LINE_'+$_) }")
+        panel.execute();wait(lambda:session.ready and 'HISTORY_LINE_100' in panel.screen.text())
+        panel.latest();root.update()
+        panel.output.yview_moveto(0)
+        panel.output.tag_add('sel','1.0','1.5')
+        root.update()
+        panel.editor.delete('1.0','end')
+        panel.editor.insert('1.0',"Start-Sleep -Milliseconds 500; Write-Output 'SECOND_COMMAND_VISIBLE'")
+        panel.execute()
+        result['console_tracking_resumed']=not panel.output.tag_ranges('sel')
+        wait(lambda:panel.running_since is not None and panel.progress['mode']=='indeterminate')
+        wait(lambda:session.ready and 'SECOND_COMMAND_VISIBLE' in panel.output.get('1.0','end'))
+        result['console_second_command_visible']=True
+        result['console_ready_state']=panel.state.get()=='コマンド受付待ち'
+        result['console_command_history']=len(panel.command_history)==3 and '入力できました' not in panel.command_history
         completed=directory/'hidden-console-done.txt'
         session.execute("Start-Sleep -Milliseconds 300\nSet-Content -LiteralPath '"+str(completed).replace("'","''")+"' -Value 'done'")
         panel.hide();wait(lambda:completed.exists() and session.ready)

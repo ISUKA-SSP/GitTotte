@@ -1,7 +1,7 @@
 name: Test Python application
 on:
   push:
-    branches: [main, 'gpt/gittotte-stage1', 'gpt/folder-multiselect', 'gpt/local-records', 'gpt/route-review', 'gpt/file-choices', 'gpt/restoration', 'gpt/hover-colors', 'gpt/compare-selection', 'gpt/operation-guide']
+    branches: [main, 'gpt/console-polish', 'gpt/gittotte-stage1', 'gpt/folder-multiselect', 'gpt/local-records', 'gpt/route-review', 'gpt/file-choices', 'gpt/restoration', 'gpt/hover-colors', 'gpt/compare-selection', 'gpt/operation-guide']
   workflow_dispatch:
 permissions:
   contents: read

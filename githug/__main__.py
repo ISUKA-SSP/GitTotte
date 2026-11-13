@@ -189,6 +189,7 @@ class App:
         ttk.Button(folder_controls, text='PowerShell／コマンド', command=self.command_dialog).pack(side='left', padx=4)
         ttk.Button(folder_controls, text='一覧を再表示', command=self.check_folder_tab).pack(side='left', padx=4)
         self.console = ConsolePanel(self)
+        self.window.bind('<F5>', self.refresh_shortcut, add='+')
         window.protocol('WM_DELETE_WINDOW', self.close_app)
         self.explanation = ExplanationPanel(split, self)
         self.explanation_visible = False
@@ -649,6 +650,15 @@ class App:
                 note = self.operation_note[-120:]
                 self.status.set(f'{self.operation_label}  {int(time.monotonic() - self.operation_started)} 秒  {note}')
         self.window.after(100, self.poll)
+
+    def refresh_shortcut(self,event=None):
+        if (self.console.active or self.console.visible or self.busy
+                or not self.project or self.window.grab_current() is not None):
+            return 'break'
+        if event is not None and event.widget.winfo_toplevel() != self.window:
+            return 'break'
+        self.refresh()
+        return 'break'
 
     def refresh(self):
         if self.project and not self.busy:
