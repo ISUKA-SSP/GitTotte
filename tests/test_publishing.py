@@ -43,7 +43,7 @@ class PublishTests(unittest.TestCase):
     def test_sensitive_modified_files_are_not_preselected(self):
         for name in ['settings.json', 'madobe.json', '.env', 'private.db', 'api_key.txt',
                      'id_rsa', 'id_dsa', 'id_ecdsa', 'id_ed25519', '.npmrc', '.pypirc',
-                     'release.keystore', 'release.jks', 'service-account-prod.json',
+                     '.keystore', 'release.keystore', 'release.jks', 'service-account-prod.json',
                      'keys/SERVICE_ACCOUNT.JSON']:
             self.assertFalse(Change(name, 'M', 'hash').initially_selected)
         self.assertTrue(Change('core.py', 'M', 'hash').initially_selected)
