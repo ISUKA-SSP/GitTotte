@@ -49,6 +49,6 @@ def history_input(project,sha,base=None,detail=False):
     if not safe:raise ValueError('説明できる変更がありません。設定・DB・鍵・バイナリは除外しています。')
     if len(safe)>500:raise ValueError('変更ファイルが多すぎます。一つの履歴を選んでください。')
     text=title+'\n除外したファイル: '+str(excluded)+'\n追加 / 削除 / ファイル\n'+'\n'.join(summary)
-    if detail:text+='\n差分:\n'+git('diff','--no-ext-diff','--no-textconv','--no-renames','--unified=3',baseline,sha,'--',*safe,cwd=project.cache)
+    if detail:text+='\n差分:\n'+git('--literal-pathspecs','diff','--no-ext-diff','--no-textconv','--no-renames','--unified=3',baseline,sha,'--',*safe,cwd=project.cache)
     else:text+='\n差分の本文は未送信です。目的や正しさを断定しないでください。'
     return bounded(text)

@@ -1,10 +1,10 @@
 """Non-destructive repository browsing and snapshot creation."""
-import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 from datetime import datetime
 from uuid import uuid4
 from .platform_support import git_executable
@@ -60,8 +60,13 @@ class Project:
         if not self.cache.exists():
             # Clone into a temporary directory: interrupted downloads cannot become a valid cache.
             temporary = self.base / ('download-' + uuid4().hex)
-            git('clone', '--mirror', self.url, temporary)
-            temporary.rename(self.cache)
+            try:
+                git('clone', '--mirror', self.url, temporary)
+                temporary.rename(self.cache)
+            finally:
+                if temporary.exists():
+                    from .updating import remove_temporary
+                    remove_temporary(temporary)
         else:
             git('fetch', '--prune', 'origin', cwd=self.cache)
         return self.history()
@@ -96,7 +101,7 @@ class Project:
 
     def compare(self, sha, folder, progress=None, cancelled=None):
         """Compare tracked commit contents with a folder without modifying that folder."""
-        folder = Path(folder)
+        folder = Path(folder).resolve()
         if not folder.is_dir():
             raise ValueError('比較するフォルダーが見つかりません。')
         def report(stage, count, total, name):
@@ -104,8 +109,29 @@ class Project:
                 raise ComparisonCancelled()
             if progress:
                 progress(stage, count, total, name)
+            if cancelled and cancelled():
+                raise ComparisonCancelled()
         report('履歴のファイル一覧を取得', 0, None, '')
         entries = list(filter(None, git('ls-tree', '-r', '-z', sha, cwd=self.cache).split('\0')))
+        # A fresh index supplies the selected revision's attributes when the
+        # folder lacks them. Git reads working files without touching their index.
+        config_args = []
+        if (folder / '.git').exists():
+            settings = git('config', '--null', '--get-regexp',
+                           r'^(core\.(autocrlf|eol|attributesfile)|filter\..*\.(clean|process|required))$',
+                           cwd=folder, allowed_returncodes=(0, 1))
+            for setting in filter(None, settings.split('\0')):
+                name, separator, value = setting.partition('\n')
+                config_args.extend(('-c', name + '=' + (value if separator else 'true')))
+        with tempfile.TemporaryDirectory(prefix='gittotte-compare-') as temporary:
+            read_env = {'GIT_DIR': str(self.cache.resolve()), 'GIT_WORK_TREE': str(folder),
+                        'GIT_INDEX_FILE': str(Path(temporary) / 'index'), 'GIT_OPTIONAL_LOCKS': '0'}
+            git('read-tree', sha, cwd=self.cache, env=read_env)
+            report('履歴と内容を一括比較', 0, len(entries), '')
+            changed = set(filter(None, git(*config_args, '-c', 'core.filemode=false',
+                          'diff', '--no-ext-diff', '--no-textconv', '--no-renames',
+                          '--ignore-submodules=all', '--name-only', '-z', sha, '--',
+                          cwd=folder, env=read_env).split('\0')))
         differences = []
         known = set()
         for index, entry in enumerate(entries):
@@ -120,7 +146,7 @@ class Project:
                 differences.append(('手元にない', name))
             elif path.is_symlink() or not path.is_file():
                 differences.append(('種類が異なる', name))
-            elif git('hash-object', '--no-filters', '--', path.absolute(), cwd=self.cache).strip() != blob:
+            elif name in changed:
                 differences.append(('内容が異なる', name))
         report('履歴と内容を比較', len(entries), len(entries), '')
         scanned = 0

@@ -48,3 +48,20 @@ class InspectionTests(unittest.TestCase):
         self.assertNotIn('secret-value',text);self.assertNotIn('settings.json',text)
         self.assertNotIn('+second',history_input(project,tip))
         with self.assertRaises(Exception):history_input(project,tip,'--evil')
+
+    def test_bracket_filename_does_not_include_sensitive_matching_file(self):
+        git('init','-b','main',self.root)
+        git('config','user.name','Test',cwd=self.root)
+        git('config','user.email','test@example.invalid',cwd=self.root)
+        for name in ('[s]ecret.txt','secret.txt'):
+            (self.root/name).write_bytes(b'before\n')
+        git('add','.',cwd=self.root)
+        git('-c','commit.gpgsign=false','commit','-m','base',cwd=self.root)
+        (self.root/'[s]ecret.txt').write_bytes(b'public example\n')
+        (self.root/'secret.txt').write_bytes(b'PRIVATE_VALUE_NOT_TO_SEND\n')
+        git('add','.',cwd=self.root)
+        git('-c','commit.gpgsign=false','commit','-m','change',cwd=self.root)
+        tip=git('rev-parse','HEAD',cwd=self.root).strip()
+        text=history_input(SimpleNamespace(cache=self.root),tip,detail=True)
+        self.assertIn('+public example',text)
+        self.assertNotIn('PRIVATE_VALUE_NOT_TO_SEND',text)

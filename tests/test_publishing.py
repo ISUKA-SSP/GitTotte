@@ -41,9 +41,29 @@ class PublishTests(unittest.TestCase):
         return publish(self.project, plan, selected, branch, is_new, 'change code', 'Tester', 'tester@example.com')
 
     def test_sensitive_modified_files_are_not_preselected(self):
-        for name in ['settings.json', 'madobe.json', '.env', 'private.db', 'api_key.txt']:
+        for name in ['settings.json', 'madobe.json', '.env', 'private.db', 'api_key.txt',
+                     'id_rsa', 'id_dsa', 'id_ecdsa', 'id_ed25519', '.npmrc', '.pypirc',
+                     'release.keystore', 'release.jks', 'service-account-prod.json',
+                     'keys/SERVICE_ACCOUNT.JSON']:
             self.assertFalse(Change(name, 'M', 'hash').initially_selected)
         self.assertTrue(Change('core.py', 'M', 'hash').initially_selected)
+        self.assertTrue(Change('id_rsa.pub', 'A', 'hash').initially_selected)
+        self.assertTrue(Change('service-account-guide.md', 'A', 'hash').initially_selected)
+
+    def test_filename_with_brackets_is_literal_in_git_and_preview(self):
+        for name in ('a.txt', 'b.txt', '[ab].txt'):
+            (self.seed / name).write_bytes(b'base\n')
+        git('add', '.', cwd=self.seed)
+        git('-c', 'commit.gpgsign=false', 'commit', '-m', 'bracket files', cwd=self.seed)
+        git('push', self.remote, 'main', cwd=self.seed)
+        git('fetch', 'origin', cwd=self.project.cache)
+        sha = git('rev-parse', 'refs/heads/main', cwd=self.project.cache).strip()
+        folder = Path(self.project.snapshot(sha))
+        for name in ('a.txt', 'b.txt', '[ab].txt'):
+            (folder / name).write_bytes(b'edited\n')
+        plan = inspect_push(self.project, folder)
+        preview = preview_changes(self.project, plan, ['[ab].txt'])
+        self.assertEqual(preview['summary'], '1\t1\t[ab].txt\n')
 
     def test_bulk_selection_and_counts(self):
         changes = [Change('code.py','M','x'),Change('added.py','A','y'),Change('old.txt','D',None),Change('private.db','A','z')]

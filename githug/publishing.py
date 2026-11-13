@@ -224,7 +224,7 @@ def prepare_selected(project, plan, paths, folder):
             shutil.copyfile(safe_path(plan.folder, change.path), target)
             if digest(target) != change.fingerprint:
                 raise UpdateConflict('コピー中にファイルが変わりました。送信候補を確認し直してください: ' + change.path)
-        git('add', '-A', '--', change.path, cwd=folder)
+        git('--literal-pathspecs', 'add', '-A', '--', change.path, cwd=folder)
     selected_changes(plan, paths)
     return selected
 
