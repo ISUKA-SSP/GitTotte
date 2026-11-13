@@ -32,10 +32,10 @@ def verify_console(app,directory,capture):
         panel.output.tag_add('sel','1.0','1.5')
         root.update()
         panel.editor.delete('1.0','end')
-        panel.editor.insert('1.0',"Start-Sleep -Milliseconds 500; Write-Output 'SECOND_COMMAND_VISIBLE'")
+        panel.editor.insert('1.0',"Start-Sleep -Seconds 1; Write-Output 'SECOND_COMMAND_VISIBLE'")
         panel.execute()
         result['console_tracking_resumed']=not panel.output.tag_ranges('sel')
-        wait(lambda:panel.running_since is not None and panel.progress['mode']=='indeterminate')
+        wait(lambda:panel.running_since is not None and str(panel.progress['mode'])=='indeterminate')
         wait(lambda:session.ready and 'SECOND_COMMAND_VISIBLE' in panel.output.get('1.0','end'))
         result['console_second_command_visible']=True
         result['console_ready_state']=panel.state.get()=='コマンド受付待ち'
