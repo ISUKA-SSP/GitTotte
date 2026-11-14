@@ -1,0 +1,40 @@
+name: Publish verified GitTotte v1.1.2
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/publish-v1.1.2.yml]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-v1.1.2
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check tested build and complete release assets
+        run: |
+          gh api repos/$GH_REPO/actions/runs/43441879446 > /tmp/build.json
+          gh api repos/$GH_REPO/releases/444328692 > /tmp/release.json
+          python3 - <<'PY'
+          import json
+          build=json.load(open('/tmp/build.json'))
+          release=json.load(open('/tmp/release.json'))
+          expected='5266cd3bdf08da28d0ac9abc8a1aaf32dd2198a6'
+          assert build['head_sha']==expected and build['conclusion']=='success'
+          assert release['tag_name']=='v1.1.2' and release['target_commitish']==expected
+          assets={a['name']:a for a in release['assets']}
+          for kind in ('Windows-x64','Source','ThirdPartySources','Checks'):
+              for ext in ('zip','sha256'):
+                  a=assets[f'GitTotte-1.1.2-{kind}.{ext}']
+                  assert a['state']=='uploaded' and a['size']>0
+          assert assets['GitTotte-1.1.2-Windows-x64.zip']['digest']=='sha256:d8bd6aefd92e562b5ad303453f97e1398e1d73d44b1b5aa9e5e0550f53aeed5f'
+          print('Verified tested commit and all eight release assets.')
+          PY
+      - name: Publish approved release as latest
+        run: gh release edit v1.1.2 --draft=false --latest
